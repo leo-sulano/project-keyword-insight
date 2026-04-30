@@ -7,15 +7,18 @@ from pipeline import aggregate
 
 
 def _raw_df():
+    # "slot games" appears in both SAU and KWT → survives cross-country filter
+    # "poker tips" appears in both SAU and KWT → survives (used for impression filter test)
     return pd.DataFrame({
-        "site": ["https://a.com"] * 4,
-        "keyword": ["slot games", "slot games", "poker tips", "poker tips"],
-        "country": ["SAU", "SAU", "KWT", "KWT"],
-        "date": ["2026-04-01", "2026-04-02", "2026-04-01", "2026-04-02"],
-        "clicks": [10, 20, 5, 15],
-        "impressions": [100, 200, 50, 150],
-        "ctr": [0.1, 0.1, 0.1, 0.1],
-        "position": [3.0, 5.0, 2.0, 4.0],
+        "site":        ["https://a.com"] * 8,
+        "keyword":     ["slot games", "slot games", "slot games", "slot games",
+                        "poker tips", "poker tips", "poker tips", "poker tips"],
+        "country":     ["SAU", "SAU", "KWT", "KWT", "SAU", "SAU", "KWT", "KWT"],
+        "date":        ["2026-04-01", "2026-04-02"] * 4,
+        "clicks":      [10, 20, 8, 12,  3, 5, 2, 4],
+        "impressions": [100, 200, 80, 120, 50, 60, 40, 50],
+        "ctr":         [0.1] * 8,
+        "position":    [3.0, 5.0, 2.0, 4.0, 6.0, 7.0, 5.0, 8.0],
     })
 
 
@@ -51,6 +54,21 @@ def test_aggregate_filters_low_impressions():
     assert "poker tips" not in result["keyword"].values
 
 
+def test_aggregate_keeps_only_both_country_keywords():
+    # "rare keyword" only in SAU — should be removed
+    df = _raw_df().copy()
+    extra = pd.DataFrame({
+        "site": ["https://a.com"],
+        "keyword": ["rare keyword"],
+        "country": ["SAU"],
+        "date": ["2026-04-01"],
+        "clicks": [5], "impressions": [50], "ctr": [0.1], "position": [3.0],
+    })
+    df = pd.concat([df, extra], ignore_index=True)
+    result = aggregate(df)
+    assert "rare keyword" not in result["keyword"].values
+
+
 def test_aggregate_returns_empty_for_empty_input():
     result = aggregate(pd.DataFrame())
     assert result.empty
@@ -67,12 +85,20 @@ def test_run_pipeline_returns_empty_when_no_data(tmp_path):
     assert result.empty
 
 
-def test_run_pipeline_filters_brands_and_aggregates(tmp_path):
+def test_run_pipeline_filters_brands_and_cross_country(tmp_path):
+    # "best online slots" and "online casino bonus" both appear in SAU and KWT → kept
+    # "spinjo login" is branded → removed
     mock_rows = [
         {"site": "https://spinjo.io", "keyword": "best online slots", "country": "sau",
          "date": "2026-04-10", "clicks": 20, "impressions": 300, "ctr": 0.067, "position": 4.2},
+        {"site": "https://spinjo.io", "keyword": "best online slots", "country": "kwt",
+         "date": "2026-04-10", "clicks": 10, "impressions": 150, "ctr": 0.067, "position": 5.0},
         {"site": "https://spinjo.io", "keyword": "spinjo login", "country": "sau",
          "date": "2026-04-10", "clicks": 5, "impressions": 100, "ctr": 0.05, "position": 1.0},
+        {"site": "https://spinjo.io", "keyword": "spinjo login", "country": "kwt",
+         "date": "2026-04-10", "clicks": 3, "impressions": 80, "ctr": 0.04, "position": 1.5},
+        {"site": "https://spinjo.io", "keyword": "online casino bonus", "country": "sau",
+         "date": "2026-04-10", "clicks": 18, "impressions": 250, "ctr": 0.072, "position": 5.1},
         {"site": "https://spinjo.io", "keyword": "online casino bonus", "country": "kwt",
          "date": "2026-04-10", "clicks": 15, "impressions": 200, "ctr": 0.075, "position": 6.1},
     ]
@@ -84,5 +110,5 @@ def test_run_pipeline_filters_brands_and_aggregates(tmp_path):
         result = run_pipeline()
 
     assert "spinjo login" not in result["keyword"].values, "Brand term should be filtered"
-    assert "best online slots" in result["keyword"].values, "Generic term should pass"
-    assert "online casino bonus" in result["keyword"].values, "Generic term should pass"
+    assert "best online slots" in result["keyword"].values, "Cross-country generic term should pass"
+    assert "online casino bonus" in result["keyword"].values, "Cross-country generic term should pass"

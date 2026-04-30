@@ -60,15 +60,16 @@ for site in SITES:
                 "avg_position": position,
             })
 
-AR = "؀-ۿݐ-ݿ"
-def detect_language(kw):
-    import re
-    if re.search(f"[{AR}]", kw): return "ar"
-    if re.search(r"[a-zA-Z]", kw): return "en"
-    return "other"
-
 df = pd.DataFrame(rows).sort_values("clicks", ascending=False).reset_index(drop=True)
-df["language"] = df["keyword"].apply(detect_language)
+
+# Keep only keywords that rank in BOTH SAU and KWT for the same site
+both = (
+    df.groupby(["site", "keyword"])["country"]
+    .nunique()
+    .reset_index(name="n")
+)
+common = both[both["n"] == 2][["site", "keyword"]]
+df = df.merge(common, on=["site", "keyword"]).reset_index(drop=True)
 
 os.makedirs("output", exist_ok=True)
 os.makedirs("public", exist_ok=True)

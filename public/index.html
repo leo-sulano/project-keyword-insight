@@ -351,15 +351,6 @@
   </div>
 
   <div class="fg">
-    <span class="fl">Language</span>
-    <div class="tg" id="ltog">
-      <button class="tb on" data-v="all">All</button>
-      <button class="tb"    data-v="en">EN</button>
-      <button class="tb"    data-v="ar">AR</button>
-    </div>
-  </div>
-
-  <div class="fg">
     <span class="fl">Site</span>
     <select class="fsel" id="site-sel">
       <option value="all">All Sites</option>
@@ -487,12 +478,9 @@
 /* ── State ─────────────────────────────────────────────────────────────────── */
 let ALL = [], F = [];
 let sCol = 'clicks', sAsc = false;
-let fC = 'all', fL = 'all', fS = 'all';
+let fC = 'all', fS = 'all';
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
-const AR = /[؀-ۿݐ-ݿ]/;
-const lang = kw => AR.test(kw) ? 'ar' : /[a-zA-Z]/.test(kw) ? 'en' : 'other';
-
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M'
                : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
                : n.toLocaleString();
@@ -525,7 +513,6 @@ const PC = { displayModeBar:false, responsive:true };
 function apply() {
   F = ALL.filter(r => {
     if (fC !== 'all' && r.country !== fC) return false;
-    if (fL !== 'all' && lang(r.keyword) !== fL) return false;
     if (fS !== 'all' && r.site !== fS) return false;
     return true;
   });
@@ -713,6 +700,18 @@ async function boot() {
     const json = await res.json();
     ALL = json.rows;
 
+    // Keep only keywords that rank in BOTH SAU and KWT for the same site
+    const presence = {};
+    ALL.forEach(r => {
+      const k = r.site + '||' + r.keyword.toLowerCase();
+      if (!presence[k]) presence[k] = new Set();
+      presence[k].add(r.country.toUpperCase());
+    });
+    ALL = ALL.filter(r => {
+      const k = r.site + '||' + r.keyword.toLowerCase();
+      return presence[k].size === 2;
+    });
+
     // Populate site dropdown
     const sites = [...new Set(ALL.map(r=>r.site))].sort();
     const sel = document.getElementById('site-sel');
@@ -731,7 +730,7 @@ async function boot() {
     apply();
   } catch(e) {
     document.getElementById('tb').innerHTML =
-      '<tr><td colspan="8" class="empty">⚠ data.json not found — run <code>python pipeline.py</code> first</td></tr>';
+      '<tr><td colspan="6" class="empty">⚠ data.json not found — run <code>python pipeline.py</code> first</td></tr>';
   }
 }
 
@@ -740,12 +739,6 @@ document.getElementById('ctog').addEventListener('click', e => {
   const b = e.target.closest('[data-v]'); if(!b) return;
   document.querySelectorAll('#ctog .tb').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); fC = b.dataset.v; apply();
-});
-
-document.getElementById('ltog').addEventListener('click', e => {
-  const b = e.target.closest('[data-v]'); if(!b) return;
-  document.querySelectorAll('#ltog .tb').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); fL = b.dataset.v; apply();
 });
 
 document.getElementById('site-sel').addEventListener('change', e => {

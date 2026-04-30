@@ -4,7 +4,6 @@ import logging
 import pandas as pd
 from datetime import datetime, timezone
 from config import SITES, START_DATE, END_DATE, COUNTRIES, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
-from filters import detect_language
 from auth import get_service
 from gsc_client import fetch_site_data
 from filters import filter_keywords
@@ -47,6 +46,16 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     result["avg_position"] = result["avg_position"].round(1)
 
     result = result[result["impressions"] >= MIN_IMPRESSIONS]
+
+    # Keep only keywords that rank in BOTH SAU and KWT for the same site
+    both = (
+        result.groupby(["site", "keyword"])["country"]
+        .nunique()
+        .reset_index(name="country_count")
+    )
+    common = both[both["country_count"] == 2][["site", "keyword"]]
+    result = result.merge(common, on=["site", "keyword"])
+
     return result.sort_values("clicks", ascending=False).reset_index(drop=True)
 
 
@@ -90,16 +99,14 @@ def run_pipeline() -> pd.DataFrame:
     logger.info("Saved → %s (also → %s)", csv_path, LATEST_CSV)
 
     # Write public/data.json for the Vercel static dashboard
-    out = result.copy()
-    out["language"] = out["keyword"].apply(detect_language)
     os.makedirs("public", exist_ok=True)
     payload = {
         "updated": datetime.now(timezone.utc).isoformat(),
-        "rows": out.to_dict(orient="records"),
+        "rows": result.to_dict(orient="records"),
     }
     with open("public/data.json", "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False)
-    logger.info("Saved → public/data.json (%d rows)", len(out))
+    logger.info("Saved → public/data.json (%d rows)", len(result))
 
     return result
 
