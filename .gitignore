@@ -1,0 +1,10 @@
+credentials/client_secrets.json
+credentials/token.pickle
+output/gsc_nonbranded_2*.csv
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.egg-info/
+.pytest_cache/
+.streamlit/secrets.toml
