@@ -1,6 +1,8 @@
-"""Generates output/latest.csv with realistic sample data for dashboard preview."""
+"""Generates output/latest.csv and public/data.json with sample data for dashboard preview."""
+import json
 import os
 import random
+from datetime import datetime, timezone
 import pandas as pd
 
 random.seed(42)
@@ -58,8 +60,26 @@ for site in SITES:
                 "avg_position": position,
             })
 
+AR = "؀-ۿݐ-ݿ"
+def detect_language(kw):
+    import re
+    if re.search(f"[{AR}]", kw): return "ar"
+    if re.search(r"[a-zA-Z]", kw): return "en"
+    return "other"
+
 df = pd.DataFrame(rows).sort_values("clicks", ascending=False).reset_index(drop=True)
+df["language"] = df["keyword"].apply(detect_language)
+
 os.makedirs("output", exist_ok=True)
+os.makedirs("public", exist_ok=True)
+
 df.to_csv("output/latest.csv", index=False)
-print(f"Written {len(df)} rows to output/latest.csv")
-print(df.head(10).to_string(index=False))
+
+payload = {
+    "updated": datetime.now(timezone.utc).isoformat(),
+    "rows": df.to_dict(orient="records"),
+}
+with open("public/data.json", "w", encoding="utf-8") as fh:
+    json.dump(payload, fh, ensure_ascii=False)
+
+print(f"Written {len(df)} rows to output/latest.csv and public/data.json")

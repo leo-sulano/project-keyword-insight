@@ -1,8 +1,10 @@
+import json
 import os
 import logging
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from config import SITES, START_DATE, END_DATE, COUNTRIES, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
+from filters import detect_language
 from auth import get_service
 from gsc_client import fetch_site_data
 from filters import filter_keywords
@@ -86,6 +88,18 @@ def run_pipeline() -> pd.DataFrame:
     result.to_csv(csv_path, index=False)
     result.to_csv(LATEST_CSV, index=False)
     logger.info("Saved → %s (also → %s)", csv_path, LATEST_CSV)
+
+    # Write public/data.json for the Vercel static dashboard
+    out = result.copy()
+    out["language"] = out["keyword"].apply(detect_language)
+    os.makedirs("public", exist_ok=True)
+    payload = {
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "rows": out.to_dict(orient="records"),
+    }
+    with open("public/data.json", "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, ensure_ascii=False)
+    logger.info("Saved → public/data.json (%d rows)", len(out))
 
     return result
 

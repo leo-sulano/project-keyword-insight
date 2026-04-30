@@ -8,3 +8,4 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .streamlit/secrets.toml
+# public/data.json is tracked — it's the data served by Vercel

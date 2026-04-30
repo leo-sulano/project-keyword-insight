@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keyword Insight — Non-Branded GSC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    :root {
+      --bg:       #07090E;
+      --s1:       #0C0E18;
+      --s2:       #111422;
+      --border:   #181C2C;
+      --border2:  #222740;
+      --gold:     #F0A020;
+      --gold-low: rgba(240,160,32,0.12);
+      --gold-dim: #6B4610;
+      --teal:     #00C4B0;
+      --sand:     #D4A86A;
+      --text:     #DDE0EE;
+      --muted:    #56607A;
+      --dim:      #252840;
+      --font-h:   'Syne', sans-serif;
+      --font-m:   'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-m);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 15% 0%,   rgba(240,160,32,.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 85% 100%,  rgba(0,196,176,.04) 0%, transparent 60%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(7,9,14,.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+      padding: 18px 32px;
+    }
+
+    .logo { display: flex; align-items: baseline; gap: 14px; }
+
+    .logo h1 {
+      font-family: var(--font-h);
+      font-size: 1.35rem; font-weight: 800;
+      letter-spacing: -.025em; color: var(--text);
+    }
+
+    .logo-pill {
+      font-size: .6rem; font-weight: 600;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold);
+      background: var(--gold-low);
+      border: 1px solid var(--gold-dim);
+      padding: 2px 9px;
+    }
+
+    .header-right {
+      display: flex; align-items: center; gap: 20px;
+      font-size: .7rem; color: var(--muted);
+    }
+
+    .live-dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--teal);
+      margin-right: 7px;
+      animation: blink 2.4s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ── FILTERS ────────────────────────────────────────────────────────── */
+    .filters {
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 32px;
+      display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    }
+
+    .fg { display: flex; align-items: center; gap: 8px; }
+
+    .fl {
+      font-size: .6rem; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tg { display: flex; border: 1px solid var(--border2); overflow: hidden; }
+
+    .tb {
+      padding: 5px 13px;
+      font-family: var(--font-m); font-size: .68rem; font-weight: 500;
+      letter-spacing: .04em; background: transparent;
+      color: var(--muted); border: none;
+      border-right: 1px solid var(--border2);
+      cursor: pointer; transition: background .12s, color .12s;
+    }
+    .tb:last-child { border-right: none; }
+    .tb.on { background: var(--gold); color: var(--bg); }
+    .tb:not(.on):hover { background: var(--s2); color: var(--text); }
+
+    select.fsel {
+      font-family: var(--font-m); font-size: .68rem;
+      background: var(--s2); color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 5px 28px 5px 10px; outline: none; cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2356607A'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 9px center;
+      max-width: 210px;
+    }
+    select.fsel:focus { border-color: var(--gold); }
+
+    .rc { margin-left: auto; font-size: .7rem; color: var(--muted); }
+    .rc strong { color: var(--gold); }
+
+    /* ── MAIN ───────────────────────────────────────────────────────────── */
+    main { padding: 28px 32px; }
+
+    /* ── KPI GRID ───────────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .kpi {
+      background: var(--s1); padding: 22px 24px;
+      position: relative; overflow: hidden;
+    }
+
+    .kpi::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0; height: 2px;
+      background: var(--gold);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .7s cubic-bezier(.22,1,.36,1);
+    }
+    .kpi.in::after { transform: scaleX(1); }
+
+    .kpi-lbl {
+      font-size: .58rem; text-transform: uppercase;
+      letter-spacing: .16em; color: var(--muted); margin-bottom: 10px;
+    }
+
+    .kpi-val {
+      font-size: 2.1rem; font-weight: 600;
+      color: var(--text); line-height: 1;
+      letter-spacing: -.04em;
+    }
+
+    .kpi-sub { font-size: .62rem; color: var(--muted); margin-top: 7px; }
+
+    .kpi-glyph {
+      position: absolute; top: 18px; right: 18px;
+      font-style: normal; font-size: 1.1rem;
+      color: var(--gold); opacity: .18;
+    }
+
+    /* ── 2-COL CHARTS ───────────────────────────────────────────────────── */
+    .charts-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .cpanel { background: var(--s1); padding: 20px; }
+
+    .ph {
+      display: flex; align-items: baseline;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+
+    .ptitle {
+      font-family: var(--font-h);
+      font-size: .8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .03em;
+    }
+
+    .psub { font-size: .62rem; color: var(--muted); }
+
+    /* ── TABLE PANEL ────────────────────────────────────────────────────── */
+    .tpanel {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .tph {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .twrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .71rem; }
+
+    thead th {
+      padding: 9px 16px; text-align: left;
+      font-size: .58rem; text-transform: uppercase;
+      letter-spacing: .13em; color: var(--muted);
+      background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; white-space: nowrap; user-select: none;
+    }
+    thead th:hover { color: var(--gold); }
+    thead th.sorted { color: var(--gold); }
+    thead th.sorted::after { content: ' ↓'; }
+    thead th.sorted.asc::after { content: ' ↑'; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--s2); }
+
+    td { padding: 9px 16px; vertical-align: middle; }
+    td.kw { font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.nr { text-align: right; }
+
+    .badge {
+      display: inline-block; padding: 1px 7px;
+      font-size: .57rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .b-sau { background: rgba(212,168,106,.14); color: var(--sand); }
+    .b-kwt { background: rgba(0,196,176,.12);  color: var(--teal); }
+    .b-en  { background: var(--gold-low);       color: var(--gold); }
+    .b-ar  { background: rgba(180,120,240,.1);  color: #C89EE8; }
+
+    .sitechip {
+      font-size: .6rem; color: var(--muted);
+      max-width: 170px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; display: block;
+    }
+
+    .cbar {
+      display: inline-block; height: 3px;
+      background: var(--gold); vertical-align: middle;
+      margin-right: 7px; opacity: .65;
+    }
+
+    /* ── OPPORTUNITY ────────────────────────────────────────────────────── */
+    .opp-ctrl {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
+    }
+
+    .sg { display: flex; align-items: center; gap: 10px; }
+
+    .sg label {
+      font-size: .58rem; text-transform: uppercase;
+      letter-spacing: .11em; color: var(--muted); white-space: nowrap;
+    }
+
+    input[type=range] { width: 110px; accent-color: var(--gold); cursor: pointer; }
+
+    .sv { color: var(--gold); font-weight: 500; min-width: 38px; font-size: .7rem; }
+
+    /* ── UTILS ──────────────────────────────────────────────────────────── */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      height: 180px; color: var(--muted); font-size: .72rem; gap: 10px;
+    }
+
+    .spin {
+      width: 15px; height: 15px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: rot .75s linear infinite;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    .empty {
+      padding: 36px 20px; text-align: center;
+      color: var(--muted); font-size: .72rem;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid    { grid-template-columns: repeat(2,1fr); }
+      .charts-row  { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 580px) {
+      header, .filters, main { padding-left: 16px; padding-right: 16px; }
+      .kpi-val { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <h1>Keyword Insight</h1>
+    <span class="logo-pill">Non-Branded · GSC</span>
+  </div>
+  <div class="header-right">
+    <span><span class="live-dot"></span><span id="ts">—</span></span>
+    <span style="color:var(--sand)">SAU</span>
+    <span style="color:var(--muted)">·</span>
+    <span style="color:var(--teal)">KWT</span>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="fg">
+    <span class="fl">Country</span>
+    <div class="tg" id="ctog">
+      <button class="tb on" data-v="all">All</button>
+      <button class="tb"    data-v="SAU">SAU</button>
+      <button class="tb"    data-v="KWT">KWT</button>
+    </div>
+  </div>
+
+  <div class="fg">
+    <span class="fl">Language</span>
+    <div class="tg" id="ltog">
+      <button class="tb on" data-v="all">All</button>
+      <button class="tb"    data-v="en">EN</button>
+      <button class="tb"    data-v="ar">AR</button>
+    </div>
+  </div>
+
+  <div class="fg">
+    <span class="fl">Site</span>
+    <select class="fsel" id="site-sel">
+      <option value="all">All Sites</option>
+    </select>
+  </div>
+
+  <div class="rc" id="rc"><strong>—</strong> keywords</div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi" id="kc">
+      <i class="kpi-glyph">↗</i>
+      <div class="kpi-lbl">Total Clicks</div>
+      <div class="kpi-val" id="vc">—</div>
+      <div class="kpi-sub">non-branded traffic</div>
+    </div>
+    <div class="kpi" id="ki">
+      <i class="kpi-glyph">◉</i>
+      <div class="kpi-lbl">Impressions</div>
+      <div class="kpi-val" id="vi">—</div>
+      <div class="kpi-sub">search appearances</div>
+    </div>
+    <div class="kpi" id="kt">
+      <i class="kpi-glyph">%</i>
+      <div class="kpi-lbl">Avg CTR</div>
+      <div class="kpi-val" id="vt">—</div>
+      <div class="kpi-sub">click-through rate</div>
+    </div>
+    <div class="kpi" id="kp">
+      <i class="kpi-glyph">#</i>
+      <div class="kpi-lbl">Avg Position</div>
+      <div class="kpi-val" id="vp">—</div>
+      <div class="kpi-sub">SERP ranking</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="cpanel">
+      <div class="ph">
+        <span class="ptitle">Country Split</span>
+        <span class="psub">clicks &amp; impressions</span>
+      </div>
+      <div id="ch-country" style="height:240px"></div>
+    </div>
+    <div class="cpanel">
+      <div class="ph">
+        <span class="ptitle">CTR vs Position</span>
+        <span class="psub">bubble = impressions</span>
+      </div>
+      <div id="ch-scatter" style="height:240px"></div>
+    </div>
+  </div>
+
+  <!-- Top Keywords Table -->
+  <div class="tpanel">
+    <div class="tph">
+      <span class="ptitle">Top Non-Branded Keywords</span>
+      <span class="psub" id="tbl-sub">sorted by clicks · top 150</span>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="keyword">Keyword</th>
+            <th data-col="country">Country</th>
+            <th data-col="site">Site</th>
+            <th data-col="clicks" class="sorted">Clicks</th>
+            <th data-col="impressions">Impressions</th>
+            <th data-col="ctr">CTR %</th>
+            <th data-col="avg_position">Avg Pos</th>
+            <th data-col="lang">Lang</th>
+          </tr>
+        </thead>
+        <tbody id="tb">
+          <tr><td colspan="8" class="loading"><span class="spin"></span>&nbsp;Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Opportunity Keywords -->
+  <div class="tpanel">
+    <div class="tph">
+      <span class="ptitle">🎯 Opportunity Keywords</span>
+      <span class="psub">high impressions · low CTR · quick wins</span>
+    </div>
+    <div class="opp-ctrl">
+      <div class="sg">
+        <label>Min Impressions</label>
+        <input type="range" id="oi" min="20" max="2000" value="200" step="20">
+        <span class="sv" id="oiv">200</span>
+      </div>
+      <div class="sg">
+        <label>Max CTR %</label>
+        <input type="range" id="oc" min="0.5" max="10" value="2" step="0.5">
+        <span class="sv" id="ocv">2.0%</span>
+      </div>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Keyword</th>
+            <th>Country</th>
+            <th>Site</th>
+            <th>Impressions</th>
+            <th>Clicks</th>
+            <th>CTR %</th>
+            <th>Avg Pos</th>
+          </tr>
+        </thead>
+        <tbody id="ob">
+          <tr><td colspan="7" class="empty">Adjust sliders above to surface opportunities</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ── State ─────────────────────────────────────────────────────────────────── */
+let ALL = [], F = [];
+let sCol = 'clicks', sAsc = false;
+let fC = 'all', fL = 'all', fS = 'all';
+
+/* ── Utils ──────────────────────────────────────────────────────────────────── */
+const AR = /[؀-ۿݐ-ݿ]/;
+const lang = kw => AR.test(kw) ? 'ar' : /[a-zA-Z]/.test(kw) ? 'en' : 'other';
+
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M'
+               : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
+               : n.toLocaleString();
+
+function count(el, target, dec, suf = '') {
+  const dur = 900, t0 = Date.now();
+  (function tick() {
+    const p = Math.min(1, (Date.now()-t0)/dur);
+    const e = 1 - Math.pow(1-p, 3);
+    el.textContent = dec ? (target*e).toFixed(dec)+suf : fmt(Math.round(target*e))+suf;
+    p < 1 && requestAnimationFrame(tick);
+  })();
+}
+
+const strip = s => s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');
+
+/* ── Plotly theme ────────────────────────────────────────────────────────────── */
+const PL = {
+  paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+  font:{ family:"'IBM Plex Mono',monospace", color:'#56607A', size:10 },
+  margin:{ t:8, r:8, b:34, l:52 },
+  xaxis:{ gridcolor:'#181C2C', zerolinecolor:'#181C2C', tickfont:{size:9} },
+  yaxis:{ gridcolor:'#181C2C', zerolinecolor:'#181C2C', tickfont:{size:9} },
+  showlegend:true,
+  legend:{ x:0, y:-0.18, orientation:'h', font:{size:9} }
+};
+const PC = { displayModeBar:false, responsive:true };
+
+/* ── Filter ──────────────────────────────────────────────────────────────────── */
+function apply() {
+  F = ALL.filter(r => {
+    if (fC !== 'all' && r.country !== fC) return false;
+    if (fL !== 'all' && lang(r.keyword) !== fL) return false;
+    if (fS !== 'all' && r.site !== fS) return false;
+    return true;
+  });
+  document.getElementById('rc').innerHTML = `<strong>${F.length.toLocaleString()}</strong> keywords`;
+  kpis(); table(); country(); scatter(); opps();
+}
+
+/* ── KPIs ────────────────────────────────────────────────────────────────────── */
+function kpis() {
+  const cl = F.reduce((s,r)=>s+r.clicks,0);
+  const im = F.reduce((s,r)=>s+r.impressions,0);
+  const ct = F.length ? F.reduce((s,r)=>s+r.ctr,0)/F.length : 0;
+  const ps = F.length ? F.reduce((s,r)=>s+r.avg_position,0)/F.length : 0;
+
+  count(document.getElementById('vc'), cl, 0);
+  count(document.getElementById('vi'), im, 0);
+  count(document.getElementById('vt'), ct, 2, '%');
+  count(document.getElementById('vp'), ps, 1);
+
+  ['kc','ki','kt','kp'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('in');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')));
+  });
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────────── */
+function table() {
+  const sorted = [...F].sort((a,b)=>{
+    const av=a[sCol], bv=b[sCol];
+    const c = typeof av==='string' ? av.localeCompare(bv) : av-bv;
+    return sAsc ? c : -c;
+  }).slice(0,150);
+
+  const mCtr = Math.max(...sorted.map(r=>r.ctr), 1);
+  const tb = document.getElementById('tb');
+
+  if (!sorted.length) {
+    tb.innerHTML='<tr><td colspan="8" class="empty">No data for selected filters</td></tr>'; return;
+  }
+
+  tb.innerHTML = sorted.map(r => {
+    const l = lang(r.keyword);
+    const bw = Math.round(r.ctr/mCtr*44);
+    return `<tr>
+      <td class="kw" title="${r.keyword}">${r.keyword}</td>
+      <td><span class="badge b-${r.country.toLowerCase()}">${r.country}</span></td>
+      <td><span class="sitechip" title="${r.site}">${strip(r.site)}</span></td>
+      <td class="nr">${r.clicks.toLocaleString()}</td>
+      <td class="nr">${r.impressions.toLocaleString()}</td>
+      <td class="nr"><span class="cbar" style="width:${bw}px"></span>${r.ctr.toFixed(2)}%</td>
+      <td class="nr">${r.avg_position.toFixed(1)}</td>
+      <td><span class="badge b-${l}">${l}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Country chart ───────────────────────────────────────────────────────────── */
+function country() {
+  const sau = F.filter(r=>r.country==='SAU');
+  const kwt = F.filter(r=>r.country==='KWT');
+  const S = (a,k) => a.reduce((s,r)=>s+r[k],0);
+
+  Plotly.react('ch-country',[
+    { name:'Clicks',      type:'bar', x:['SAU','KWT'],
+      y:[S(sau,'clicks'),S(kwt,'clicks')],
+      marker:{color:['#D4A86A','#00C4B0']} },
+    { name:'Impressions', type:'bar', x:['SAU','KWT'],
+      y:[S(sau,'impressions'),S(kwt,'impressions')],
+      marker:{color:['rgba(212,168,106,.28)','rgba(0,196,176,.22)']} }
+  ],{ ...PL, barmode:'group', margin:{t:8,r:8,b:28,l:52} }, PC);
+}
+
+/* ── Scatter ─────────────────────────────────────────────────────────────────── */
+function scatter() {
+  const sample = [...F].sort((a,b)=>b.impressions-a.impressions).slice(0,200);
+  const tr = (arr,nm,col) => ({
+    name:nm, type:'scatter', mode:'markers',
+    x:arr.map(r=>r.avg_position), y:arr.map(r=>r.ctr),
+    text:arr.map(r=>r.keyword),
+    hovertemplate:'<b>%{text}</b><br>Pos: %{x}<br>CTR: %{y:.2f}%<extra></extra>',
+    marker:{
+      size:arr.map(r=>Math.max(5,Math.sqrt(r.impressions)*.6)),
+      color:col, opacity:.72, line:{width:0}
+    }
+  });
+
+  Plotly.react('ch-scatter',[
+    tr(sample.filter(r=>r.country==='SAU'),'SAU','#D4A86A'),
+    tr(sample.filter(r=>r.country==='KWT'),'KWT','#00C4B0')
+  ],{
+    ...PL,
+    xaxis:{...PL.xaxis, autorange:'reversed',
+      title:{text:'Avg Position', font:{size:9}}},
+    yaxis:{...PL.yaxis,
+      title:{text:'CTR %', font:{size:9}}}
+  }, PC);
+}
+
+/* ── Opportunities ───────────────────────────────────────────────────────────── */
+function opps() {
+  const minI = +document.getElementById('oi').value;
+  const maxC = +document.getElementById('oc').value;
+
+  const rows = F
+    .filter(r=>r.impressions>=minI && r.ctr<=maxC)
+    .sort((a,b)=>b.impressions-a.impressions)
+    .slice(0,80);
+
+  const ob = document.getElementById('ob');
+  if (!rows.length) {
+    ob.innerHTML='<tr><td colspan="7" class="empty">No opportunities found — try loosening the filters</td></tr>'; return;
+  }
+
+  ob.innerHTML = rows.map(r=>`<tr>
+    <td class="kw" title="${r.keyword}">${r.keyword}</td>
+    <td><span class="badge b-${r.country.toLowerCase()}">${r.country}</span></td>
+    <td><span class="sitechip" title="${r.site}">${strip(r.site)}</span></td>
+    <td class="nr">${r.impressions.toLocaleString()}</td>
+    <td class="nr">${r.clicks.toLocaleString()}</td>
+    <td class="nr" style="color:var(--teal)">${r.ctr.toFixed(2)}%</td>
+    <td class="nr">${r.avg_position.toFixed(1)}</td>
+  </tr>`).join('');
+}
+
+/* ── Boot ────────────────────────────────────────────────────────────────────── */
+async function boot() {
+  try {
+    const res  = await fetch('data.json');
+    const json = await res.json();
+    ALL = json.rows;
+
+    // Populate site dropdown
+    const sites = [...new Set(ALL.map(r=>r.site))].sort();
+    const sel = document.getElementById('site-sel');
+    sites.forEach(s => {
+      const o = document.createElement('option');
+      o.value=s; o.textContent=strip(s); sel.appendChild(o);
+    });
+
+    // Timestamp
+    if (json.updated) {
+      const d = new Date(json.updated);
+      document.getElementById('ts').textContent =
+        'Updated ' + d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    }
+
+    apply();
+  } catch(e) {
+    document.getElementById('tb').innerHTML =
+      '<tr><td colspan="8" class="empty">⚠ data.json not found — run <code>python pipeline.py</code> first</td></tr>';
+  }
+}
+
+/* ── Events ──────────────────────────────────────────────────────────────────── */
+document.getElementById('ctog').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if(!b) return;
+  document.querySelectorAll('#ctog .tb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); fC = b.dataset.v; apply();
+});
+
+document.getElementById('ltog').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if(!b) return;
+  document.querySelectorAll('#ltog .tb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); fL = b.dataset.v; apply();
+});
+
+document.getElementById('site-sel').addEventListener('change', e => {
+  fS = e.target.value; apply();
+});
+
+document.querySelector('thead').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]'); if(!th) return;
+  const col = th.dataset.col;
+  if(sCol===col) sAsc=!sAsc; else { sCol=col; sAsc=false; }
+  document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted','asc'));
+  th.classList.add('sorted'); if(sAsc) th.classList.add('asc');
+  table();
+});
+
+document.getElementById('oi').addEventListener('input', function() {
+  document.getElementById('oiv').textContent = this.value; opps();
+});
+document.getElementById('oc').addEventListener('input', function() {
+  document.getElementById('ocv').textContent = parseFloat(this.value).toFixed(1)+'%'; opps();
+});
+
+boot();
+</script>
+</body>
+</html>
