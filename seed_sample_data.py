@@ -9,14 +9,32 @@ random.seed(42)
 
 SITES = [
     "https://lucky7evencasino.com",
+    "https://lucky7evencasino.org",
+    "http://lucky7evencasino.io",
     "https://fortuneplaycasino.net",
+    "https://fortuneplay.casino/",
+    "https://fortuneplay.io",
     "https://www.spinjo.io",
+    "https://www.spinjocasino.com",
+    "https://www.casinospinjo.com",
+    "https://roosters.bet",
     "https://roostersbet.com",
+    "https://casinoroosters.com",
     "https://www.spinsup.io/",
+    "https://spinsupcasino.com/",
+    "https://casinospinsup.com/",
+    "https://rollero.io/",
     "https://rollerocasino.com/",
+    "https://www.casinorollero.com/",
+    "https://rocketspin.io/",
     "https://rocketspincasino.com/",
+    "https://www.casinorocketspin.com/",
+    "https://www.playmojo.io/",
     "https://www.playmojocasino.com/",
+    "https://casinoplaymojo.com/",
+    "https://www.luckyvibe.io/",
     "https://www.luckyvibecasino.com",
+    "https://www.casinoluckyvibe.com",
 ]
 
 KEYWORDS_EN = [
