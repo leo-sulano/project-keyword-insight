@@ -47,15 +47,6 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
 
     result = result[result["impressions"] >= MIN_IMPRESSIONS]
 
-    # Keep only keywords that rank in BOTH SAU and KWT for the same site
-    both = (
-        result.groupby(["site", "keyword"])["country"]
-        .nunique()
-        .reset_index(name="country_count")
-    )
-    common = both[both["country_count"] == 2][["site", "keyword"]]
-    result = result.merge(common, on=["site", "keyword"])
-
     return result.sort_values("clicks", ascending=False).reset_index(drop=True)
 
 

@@ -28,27 +28,29 @@ SITES = [
     "https://www.casinoluckyvibe.com",
 ]
 
-START_DATE = "2026-04-01"
+START_DATE = "2026-02-01"
 END_DATE = "2026-04-30"
 COUNTRIES = ["SAU", "KWT"]
 
 BRAND_TERMS = [
-    # lucky7even
-    "lucky7even", "lucky7", "lucky 7 even", "lucky 7even", "lucky seven casino",
-    # fortuneplay
-    "fortuneplay", "fortune play", "fortuneplay casino", "fortune play casino",
+    # lucky7even (including variant: lucky 7)
+    "lucky7even", "lucky7", "lucky 7", "lucky 7 even", "lucky 7even", "lucky seven casino",
+    # fortuneplay (including typos: fortunplay)
+    "fortuneplay", "fortunplay", "fortune play", "fortuneplay casino", "fortune play casino",
     # spinjo
     "spinjo", "spin jo", "spinjo casino", "spin jo casino",
-    # roosters
-    "roosters", "roostersbet", "roosters bet", "roosters casino", "casinoroosters",
-    # spinsup
-    "spinsup", "spin sup", "spins up", "spinsupcasino", "spinsup casino",
+    # roosters (including common typos: roster/rosterbet)
+    "rooster", "roosters", "roster", "roosterbet", "roostersbet", "rosterbet",
+    "rooster bet", "roster bet", "roosters bet", "roosters casino", "casinoroosters",
+    "روستر", "روستر بت",
+    # spinsup (including variant: spin up)
+    "spinsup", "spin sup", "spins up", "spin up", "spinsupcasino", "spinsup casino",
     # rollero
     "rollero", "rollero casino", "rollerocasino", "casinorollero",
     # rocketspin
     "rocketspin", "rocket spin", "rocketspin casino", "rocket spin casino", "casinorocketspin",
     # playmojo
-    "playmojo", "play mojo", "playmojo casino", "play mojo casino", "casinoplaymojo",
+    "playmojo", "playmogo", "play mojo", "playmojo casino", "play mojo casino", "casinoplaymojo",
     # luckyvibe
     "luckyvibe", "lucky vibe", "luckyvibe casino", "lucky vibe casino", "casinoluckyvibe",
 ]
@@ -59,7 +61,7 @@ NAVIGATIONAL_TERMS = [
     "download", "mobile app",
 ]
 
-MIN_IMPRESSIONS = 10
+MIN_IMPRESSIONS = 5
 
 CREDENTIALS_FILE = "credentials/client_secrets.json"
 TOKEN_FILE = "credentials/token.pickle"

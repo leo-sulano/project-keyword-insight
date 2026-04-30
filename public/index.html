@@ -700,18 +700,6 @@ async function boot() {
     const json = await res.json();
     ALL = json.rows;
 
-    // Keep only keywords that rank in BOTH SAU and KWT for the same site
-    const presence = {};
-    ALL.forEach(r => {
-      const k = r.site + '||' + r.keyword.toLowerCase();
-      if (!presence[k]) presence[k] = new Set();
-      presence[k].add(r.country.toUpperCase());
-    });
-    ALL = ALL.filter(r => {
-      const k = r.site + '||' + r.keyword.toLowerCase();
-      return presence[k].size === 2;
-    });
-
     // Populate site dropdown
     const sites = [...new Set(ALL.map(r=>r.site))].sort();
     const sel = document.getElementById('site-sel');
