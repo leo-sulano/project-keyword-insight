@@ -680,10 +680,12 @@ function buildSheet(rows) {
 }
 
 function exportXLSX() {
-  if (!F.length) return;
+  if (!ALL.length) return;
 
-  const sau = F.filter(r => r.country === 'SAU');
-  const kwt = F.filter(r => r.country === 'KWT');
+  // Export uses site filter only — always produces both country sheets
+  const exportRows = ALL.filter(r => fS === 'all' || r.site === fS);
+  const sau = exportRows.filter(r => (r.country||'').toUpperCase() === 'SAU');
+  const kwt = exportRows.filter(r => (r.country||'').toUpperCase() === 'KWT');
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, buildSheet(sau), 'Saudi Arabia');
@@ -700,10 +702,20 @@ async function boot() {
     const json = await res.json();
     ALL = json.rows;
 
-    // Populate site dropdown
-    const sites = [...new Set(ALL.map(r=>r.site))].sort();
+    // Populate site dropdown — always show all 27 sites
+    const ALL_SITES = [
+      "https://lucky7evencasino.com","https://lucky7evencasino.org","http://lucky7evencasino.io",
+      "https://fortuneplaycasino.net","https://fortuneplay.casino/","https://fortuneplay.io",
+      "https://www.spinjo.io","https://www.spinjocasino.com","https://www.casinospinjo.com",
+      "https://roosters.bet","https://roostersbet.com","https://casinoroosters.com",
+      "https://www.spinsup.io/","https://spinsupcasino.com/","https://casinospinsup.com/",
+      "https://rollero.io/","https://rollerocasino.com/","https://www.casinorollero.com/",
+      "https://rocketspin.io/","https://rocketspincasino.com/","https://www.casinorocketspin.com/",
+      "https://www.playmojo.io/","https://www.playmojocasino.com/","https://casinoplaymojo.com/",
+      "https://www.luckyvibe.io/","https://www.luckyvibecasino.com","https://www.casinoluckyvibe.com"
+    ];
     const sel = document.getElementById('site-sel');
-    sites.forEach(s => {
+    ALL_SITES.forEach(s => {
       const o = document.createElement('option');
       o.value=s; o.textContent=strip(s); sel.appendChild(o);
     });
