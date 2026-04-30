@@ -37,6 +37,14 @@ def filter_keywords(df: pd.DataFrame) -> pd.DataFrame:
     return df[mask].reset_index(drop=True)
 
 
+def mark_keywords(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalise keywords and add a 'branded' boolean column. Keeps all rows."""
+    df = df.copy()
+    df["keyword"] = df["keyword"].str.lower().str.strip()
+    df["branded"] = df["keyword"].apply(is_branded)
+    return df.reset_index(drop=True)
+
+
 def add_language_column(df: pd.DataFrame) -> pd.DataFrame:
     """Add a 'language' column ('ar', 'en', or 'other') based on keyword script."""
     df = df.copy()

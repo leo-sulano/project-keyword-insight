@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from config import SITES, START_DATE, END_DATE, COUNTRIES, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
 from auth import get_service
 from gsc_client import fetch_site_data
-from filters import filter_keywords
+from filters import mark_keywords
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,7 +31,7 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
             return group["position"].mean()
         return (group["position"] * group["impressions"]).sum() / total
 
-    keys = ["site", "keyword", "country"]
+    keys = ["site", "keyword", "country", "branded"]
 
     sums = df.groupby(keys, as_index=False).agg(
         clicks=("clicks", "sum"),
@@ -72,19 +72,20 @@ def run_pipeline() -> pd.DataFrame:
         return pd.DataFrame()
 
     raw = pd.DataFrame(all_rows)
-    filtered = filter_keywords(raw)
+    marked = mark_keywords(raw)
     logger.info(
-        "Filtering: %d raw rows → %d after brand/nav removal",
-        len(raw),
-        len(filtered),
+        "Marked: %d raw rows (%d branded, %d non-branded)",
+        len(marked),
+        marked["branded"].sum(),
+        (~marked["branded"]).sum(),
     )
 
-    result = aggregate(filtered)
+    result = aggregate(marked)
     logger.info("Aggregated to %d unique keyword rows", len(result))
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_path = os.path.join(OUTPUT_DIR, f"gsc_nonbranded_{ts}.csv")
+    csv_path = os.path.join(OUTPUT_DIR, f"gsc_keywords_{ts}.csv")
     result.to_csv(csv_path, index=False)
     result.to_csv(LATEST_CSV, index=False)
     logger.info("Saved → %s (also → %s)", csv_path, LATEST_CSV)

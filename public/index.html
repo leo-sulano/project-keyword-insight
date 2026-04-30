@@ -339,6 +339,15 @@
   </div>
 
   <div class="fg">
+    <span class="fl">Keywords</span>
+    <div class="tg" id="btog">
+      <button class="tb on" data-v="non-branded">Non-Branded</button>
+      <button class="tb"    data-v="branded">Branded</button>
+      <button class="tb"    data-v="all">All</button>
+    </div>
+  </div>
+
+  <div class="fg">
     <span class="fl">Site</span>
     <select class="fsel" id="site-sel">
       <option value="all">All Sites</option>
@@ -448,7 +457,7 @@
 /* ── State ─────────────────────────────────────────────────────────────────── */
 let ALL = [], F = [];
 let sCol = 'clicks', sAsc = false;
-let fC = 'all', fS = 'all';
+let fC = 'all', fS = 'all', fB = 'non-branded';
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M'
@@ -472,6 +481,8 @@ function apply() {
   F = ALL.filter(r => {
     if (fC !== 'all' && r.country !== fC) return false;
     if (fS !== 'all' && r.site !== fS) return false;
+    if (fB === 'branded' && !r.branded) return false;
+    if (fB === 'non-branded' && r.branded) return false;
     return true;
   });
   document.getElementById('rc').innerHTML = `<strong>${F.length.toLocaleString()}</strong> keywords`;
@@ -598,8 +609,13 @@ function buildSheet(rows) {
 function exportXLSX() {
   if (!ALL.length) return;
 
-  // Export uses site filter only — always produces both country sheets
-  const exportRows = ALL.filter(r => fS === 'all' || r.site === fS);
+  // Export uses site + brand filters — always produces both country sheets
+  const exportRows = ALL.filter(r => {
+    if (fS !== 'all' && r.site !== fS) return false;
+    if (fB === 'branded' && !r.branded) return false;
+    if (fB === 'non-branded' && r.branded) return false;
+    return true;
+  });
   const sau = exportRows.filter(r => (r.country||'').toUpperCase() === 'SAU');
   const kwt = exportRows.filter(r => (r.country||'').toUpperCase() === 'KWT');
 
@@ -655,6 +671,12 @@ document.getElementById('ctog').addEventListener('click', e => {
   const b = e.target.closest('[data-v]'); if(!b) return;
   document.querySelectorAll('#ctog .tb').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); fC = b.dataset.v; apply();
+});
+
+document.getElementById('btog').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if(!b) return;
+  document.querySelectorAll('#btog .tb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); fB = b.dataset.v; apply();
 });
 
 document.getElementById('site-sel').addEventListener('change', e => {
