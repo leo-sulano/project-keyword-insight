@@ -694,20 +694,30 @@ function buildSheet(rows) {
 function exportXLSX() {
   if (!ALL.length) return;
 
-  // Export uses site + brand filters — always produces both country sheets
+  // Apply site + brand filters (country handled per-sheet below)
   const exportRows = ALL.filter(r => {
     if (fS !== 'all' && r.site !== fS) return false;
     if (fB === 'branded' && !r.branded) return false;
     if (fB === 'non-branded' && r.branded) return false;
     return true;
   });
-  const sau = exportRows.filter(r => (r.country||'').toUpperCase() === 'SAU');
-  const kwt = exportRows.filter(r => (r.country||'').toUpperCase() === 'KWT');
-
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, buildSheet(sau), 'Saudi Arabia');
-  XLSX.utils.book_append_sheet(wb, buildSheet(kwt), 'Kuwait');
+
+  if (fC !== 'all') {
+    // Specific country selected → one sheet named after that country
+    const rows = exportRows.filter(r => (r.country||'').toLowerCase() === fC);
+    const label = countryLabel(fC).slice(0, 31); // Excel sheet name max 31 chars
+    XLSX.utils.book_append_sheet(wb, buildSheet(rows), label);
+  } else {
+    // All Countries → one sheet per country that has data
+    const countries = [...new Set(exportRows.map(r => (r.country||'').toLowerCase()))].sort();
+    countries.forEach(c => {
+      const rows = exportRows.filter(r => (r.country||'').toLowerCase() === c);
+      const label = countryLabel(c).slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, buildSheet(rows), label);
+    });
+  }
 
   const date = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `keyword-insight-${date}.xlsx`);
