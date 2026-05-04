@@ -747,31 +747,63 @@ async function boot() {
     ];
     renderSiteCombo('');
 
-    // Populate country combobox — restricted to the allowed country set
-    const ALLOWED_COUNTRIES = new Set([
-      'aus','ita','phl','are','nzl','deu','omn','che','irl','aut',
-      'can','kwt','fin','idn','gbr','ind','pol','pry','svn','usa',
-      'mex','fra','ken','ltu','cze','lux','mys','kor','bra','ukr',
-      'qat','hun','rus','sau','zaf','nga','nld','bgd','twn','gab',
-      'eth','moz','nor','arg','pak','tur','tha','bhr','dnk','chl',
-      'mlt','grc','prt','sgp','isl','esp','rou','svk','dza','jpn',
-      'lva','bel','hrv','kaz','est','arm','tza','syr','zmb','hkg',
-      'cyp','reu','xkk','vnm','egy','col','mar','per','bgr','tun',
-      'geo','swe','ecu','srb','ven','isr','zzz','blr','lka','mmr',
-      'npl','irq','dom','ury','jor','pse','zwe','chn','uzb','cri',
-      'mkd','irn','bih','bol','aze','lbn','mwi','vut','mda','pan',
-      'khm','alb','cmr','gha','lao','hnd','png','cod','bhs','yem',
-      'sen','rwa','dma','gtm','lby','civ','lso','cog','bwa','mdg',
-      'jam','tto','cub','jey','lca','mtq','tgo','bes','mrt','tjk',
-      'cuw','cym','som','ssd','gum','sdn','brn','nic','mng','mnp',
-      'ago','nam','kgz','slv'
-    ]);
-    const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))]
-      .filter(c => ALLOWED_COUNTRIES.has(c)).sort();
-    ALL_COUNTRY_OPTS = [{ code:'all', label:'All Countries' },
-      ...countryCodes.map(c => ({ code:c, label:countryLabel(c) }))
-        .sort((a,b)=>a.label.localeCompare(b.label))
-    ];
+    // Populate country combobox — static list of allowed countries, alphabetically sorted
+    const STATIC_COUNTRIES = [
+      {code:'ago',label:'Angola'},{code:'alb',label:'Albania'},{code:'dza',label:'Algeria'},
+      {code:'arg',label:'Argentina'},{code:'arm',label:'Armenia'},{code:'aus',label:'Australia'},
+      {code:'aut',label:'Austria'},{code:'aze',label:'Azerbaijan'},{code:'bhs',label:'Bahamas'},
+      {code:'bhr',label:'Bahrain'},{code:'bgd',label:'Bangladesh'},{code:'blr',label:'Belarus'},
+      {code:'bel',label:'Belgium'},{code:'bol',label:'Bolivia'},{code:'bih',label:'Bosnia & Herzegovina'},
+      {code:'bwa',label:'Botswana'},{code:'bra',label:'Brazil'},{code:'brn',label:'Brunei'},
+      {code:'bgr',label:'Bulgaria'},{code:'khm',label:'Cambodia'},{code:'cmr',label:'Cameroon'},
+      {code:'can',label:'Canada'},{code:'bes',label:'Caribbean Netherlands'},{code:'cym',label:'Cayman Islands'},
+      {code:'chl',label:'Chile'},{code:'chn',label:'China'},{code:'col',label:'Colombia'},
+      {code:'cod',label:'Congo - Kinshasa'},{code:'cog',label:'Congo - Brazzaville'},
+      {code:'cri',label:'Costa Rica'},{code:'hrv',label:'Croatia'},{code:'cub',label:'Cuba'},
+      {code:'cuw',label:'Curaçao'},{code:'cyp',label:'Cyprus'},{code:'cze',label:'Czechia'},
+      {code:'dnk',label:'Denmark'},{code:'dma',label:'Dominica'},{code:'dom',label:'Dominican Republic'},
+      {code:'ecu',label:'Ecuador'},{code:'egy',label:'Egypt'},{code:'slv',label:'El Salvador'},
+      {code:'est',label:'Estonia'},{code:'eth',label:'Ethiopia'},{code:'fin',label:'Finland'},
+      {code:'fra',label:'France'},{code:'gab',label:'Gabon'},{code:'geo',label:'Georgia'},
+      {code:'deu',label:'Germany'},{code:'gha',label:'Ghana'},{code:'grc',label:'Greece'},
+      {code:'gtm',label:'Guatemala'},{code:'gum',label:'Guam'},{code:'hnd',label:'Honduras'},
+      {code:'hkg',label:'Hong Kong'},{code:'hun',label:'Hungary'},{code:'isl',label:'Iceland'},
+      {code:'ind',label:'India'},{code:'idn',label:'Indonesia'},{code:'irn',label:'Iran'},
+      {code:'irq',label:'Iraq'},{code:'irl',label:'Ireland'},{code:'isr',label:'Israel'},
+      {code:'ita',label:'Italy'},{code:'jam',label:'Jamaica'},{code:'jpn',label:'Japan'},
+      {code:'jey',label:'Jersey'},{code:'jor',label:'Jordan'},{code:'kaz',label:'Kazakhstan'},
+      {code:'ken',label:'Kenya'},{code:'xkk',label:'Kosovo'},{code:'kwt',label:'Kuwait'},
+      {code:'kgz',label:'Kyrgyzstan'},{code:'lao',label:'Laos'},{code:'lva',label:'Latvia'},
+      {code:'lbn',label:'Lebanon'},{code:'lso',label:'Lesotho'},{code:'lby',label:'Libya'},
+      {code:'ltu',label:'Lithuania'},{code:'lux',label:'Luxembourg'},{code:'mkd',label:'Macedonia'},
+      {code:'mdg',label:'Madagascar'},{code:'mwi',label:'Malawi'},{code:'mys',label:'Malaysia'},
+      {code:'mlt',label:'Malta'},{code:'mtq',label:'Martinique'},{code:'mrt',label:'Mauritania'},
+      {code:'mex',label:'Mexico'},{code:'mda',label:'Moldova'},{code:'mng',label:'Mongolia'},
+      {code:'mar',label:'Morocco'},{code:'moz',label:'Mozambique'},{code:'mmr',label:'Myanmar (Burma)'},
+      {code:'nam',label:'Namibia'},{code:'npl',label:'Nepal'},{code:'nld',label:'Netherlands'},
+      {code:'nzl',label:'New Zealand'},{code:'nic',label:'Nicaragua'},{code:'nga',label:'Nigeria'},
+      {code:'mnp',label:'Northern Mariana Islands'},{code:'nor',label:'Norway'},{code:'omn',label:'Oman'},
+      {code:'pak',label:'Pakistan'},{code:'pse',label:'Palestine'},{code:'pan',label:'Panama'},
+      {code:'png',label:'Papua New Guinea'},{code:'pry',label:'Paraguay'},{code:'per',label:'Peru'},
+      {code:'phl',label:'Philippines'},{code:'pol',label:'Poland'},{code:'prt',label:'Portugal'},
+      {code:'qat',label:'Qatar'},{code:'reu',label:'Réunion'},{code:'rou',label:'Romania'},
+      {code:'rus',label:'Russia'},{code:'rwa',label:'Rwanda'},{code:'sau',label:'Saudi Arabia'},
+      {code:'sen',label:'Senegal'},{code:'srb',label:'Serbia'},{code:'sgp',label:'Singapore'},
+      {code:'svk',label:'Slovakia'},{code:'svn',label:'Slovenia'},{code:'som',label:'Somalia'},
+      {code:'zaf',label:'South Africa'},{code:'kor',label:'South Korea'},{code:'ssd',label:'South Sudan'},
+      {code:'esp',label:'Spain'},{code:'lka',label:'Sri Lanka'},{code:'lca',label:'St. Lucia'},
+      {code:'sdn',label:'Sudan'},{code:'swe',label:'Sweden'},{code:'che',label:'Switzerland'},
+      {code:'syr',label:'Syria'},{code:'twn',label:'Taiwan'},{code:'tjk',label:'Tajikistan'},
+      {code:'tza',label:'Tanzania'},{code:'tha',label:'Thailand'},{code:'tgo',label:'Togo'},
+      {code:'tto',label:'Trinidad & Tobago'},{code:'tun',label:'Tunisia'},{code:'tur',label:'Turkey'},
+      {code:'ukr',label:'Ukraine'},{code:'are',label:'United Arab Emirates'},
+      {code:'gbr',label:'United Kingdom'},{code:'usa',label:'United States'},
+      {code:'zzz',label:'Unknown Region'},{code:'ury',label:'Uruguay'},{code:'uzb',label:'Uzbekistan'},
+      {code:'vut',label:'Vanuatu'},{code:'ven',label:'Venezuela'},{code:'vnm',label:'Vietnam'},
+      {code:'yem',label:'Yemen'},{code:'zmb',label:'Zambia'},{code:'zwe',label:'Zimbabwe'},
+      {code:'civ',label:"Côte d'Ivoire"},
+    ].sort((a,b)=>a.label.localeCompare(b.label));
+    ALL_COUNTRY_OPTS = [{ code:'all', label:'All Countries' }, ...STATIC_COUNTRIES];
     renderCombo('');
 
     // Timestamp — always shows today's date
