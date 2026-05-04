@@ -479,7 +479,7 @@ const strip = s => s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');
 /* ── Filter ──────────────────────────────────────────────────────────────────── */
 function apply() {
   F = ALL.filter(r => {
-    if (fC !== 'all' && r.country !== fC) return false;
+    if (fC !== 'all' && (r.country||'').toUpperCase() !== fC) return false;
     if (fS !== 'all' && r.site !== fS) return false;
     if (fB === 'branded' && !r.branded) return false;
     if (fB === 'non-branded' && r.branded) return false;
@@ -618,6 +618,7 @@ function exportXLSX() {
   });
   const sau = exportRows.filter(r => (r.country||'').toUpperCase() === 'SAU');
   const kwt = exportRows.filter(r => (r.country||'').toUpperCase() === 'KWT');
+
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, buildSheet(sau), 'Saudi Arabia');
