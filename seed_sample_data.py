@@ -10,7 +10,7 @@ random.seed(42)
 SITES = [
     "https://lucky7evencasino.com",
     "https://lucky7evencasino.org",
-    "http://lucky7evencasino.io",
+    "https://lucky7evencasino.io/",
     "https://fortuneplaycasino.net",
     "https://fortuneplay.casino/",
     "https://fortuneplay.io",
@@ -96,6 +96,7 @@ df.to_csv("output/latest.csv", index=False)
 
 payload = {
     "updated": datetime.now(timezone.utc).isoformat(),
+    "meta": {"sites": SITES},
     "rows": df.to_dict(orient="records"),
 }
 with open("public/data.json", "w", encoding="utf-8") as fh:

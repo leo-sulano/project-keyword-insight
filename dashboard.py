@@ -48,8 +48,10 @@ def _fetch_live(
         try:
             rows = fetch_site_data(service, site, start_date, end_date, list(countries))
             all_rows.extend(rows)
+        except (ConnectionError, TimeoutError, OSError) as exc:
+            st.warning(f"Network error for {site} — skipped: {exc}")
         except Exception as exc:
-            st.warning(f"Skipped {site}: {exc}")
+            st.error(f"Unexpected error for {site} ({type(exc).__name__}): {exc}")
         prog.progress((i + 1) / len(sites), text=f"Fetching site {i + 1}/{len(sites)}…")
 
     prog.empty()
@@ -70,7 +72,7 @@ def _load_latest_csv() -> pd.DataFrame:
         st.caption(f"Loaded from: `{LATEST_CSV}`")
         return df
     # Fall back to newest timestamped file (local dev convenience)
-    files = sorted(glob.glob("output/gsc_nonbranded_*.csv"), reverse=True)
+    files = sorted(glob.glob("output/gsc_keywords_*.csv"), reverse=True)
     if not files:
         return pd.DataFrame()
     df = pd.read_csv(files[0])

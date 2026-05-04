@@ -17,11 +17,15 @@ _LATIN_RE = re.compile(r"[a-zA-Z]")
 
 def is_branded(keyword: str) -> bool:
     """Return True if keyword contains any brand or navigational term."""
+    if not isinstance(keyword, str):
+        return False
     return bool(_FILTER_PATTERN.search(keyword))
 
 
 def detect_language(keyword: str) -> str:
     """Return 'ar' for Arabic, 'en' for Latin-script, 'other' otherwise."""
+    if not isinstance(keyword, str):
+        return "other"
     if _ARABIC_RE.search(keyword):
         return "ar"
     if _LATIN_RE.search(keyword):
@@ -30,7 +34,11 @@ def detect_language(keyword: str) -> str:
 
 
 def filter_keywords(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalise keywords to lowercase, strip whitespace, remove branded rows."""
+    """Normalise keywords and remove branded rows entirely.
+
+    Used by the Streamlit dashboard's live-fetch path where only non-branded
+    rows are needed immediately, without retaining the branded flag.
+    """
     df = df.copy()
     df["keyword"] = df["keyword"].str.lower().str.strip()
     mask = ~df["keyword"].apply(is_branded)
@@ -38,7 +46,11 @@ def filter_keywords(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def mark_keywords(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalise keywords and add a 'branded' boolean column. Keeps all rows."""
+    """Normalise keywords and add a 'branded' boolean column. Keeps all rows.
+
+    Used by the pipeline so branded rows can be logged/counted before being
+    dropped in run_pipeline(), and so aggregate() can report both groups.
+    """
     df = df.copy()
     df["keyword"] = df["keyword"].str.lower().str.strip()
     df["branded"] = df["keyword"].apply(is_branded)

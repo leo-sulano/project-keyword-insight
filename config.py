@@ -61,7 +61,7 @@ NAVIGATIONAL_TERMS = [
     "download", "mobile app",
 ]
 
-MIN_IMPRESSIONS = 1
+MIN_IMPRESSIONS = 10
 
 CREDENTIALS_FILE = "credentials/client_secrets.json"
 TOKEN_FILE = "credentials/token.pickle"

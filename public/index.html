@@ -568,6 +568,7 @@ function count(el, target, dec, suf = '') {
 }
 
 const strip = s => s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 /* ── Filter ──────────────────────────────────────────────────────────────────── */
 function apply() {
@@ -619,8 +620,8 @@ function table() {
   tb.innerHTML = sorted.map(r => {
     const bw = Math.round(r.ctr/mCtr*44);
     return `<tr>
-      <td><span class="sitechip" title="${r.site}">${strip(r.site)}</span></td>
-      <td class="kw" title="${r.keyword}">${r.keyword}</td>
+      <td><span class="sitechip" title="${esc(r.site)}">${esc(strip(r.site))}</span></td>
+      <td class="kw" title="${esc(r.keyword)}">${esc(r.keyword)}</td>
       <td class="nr">${r.clicks.toLocaleString()}</td>
       <td class="nr">${r.impressions.toLocaleString()}</td>
       <td class="nr"><span class="cbar" style="width:${bw}px"></span>${r.ctr.toFixed(2)}%</td>
@@ -645,8 +646,8 @@ function opps() {
   }
 
   ob.innerHTML = rows.map(r=>`<tr>
-    <td><span class="sitechip" title="${r.site}">${strip(r.site)}</span></td>
-    <td class="kw" title="${r.keyword}">${r.keyword}</td>
+    <td><span class="sitechip" title="${esc(r.site)}">${esc(strip(r.site))}</span></td>
+    <td class="kw" title="${esc(r.keyword)}">${esc(r.keyword)}</td>
     <td class="nr">${r.clicks.toLocaleString()}</td>
     <td class="nr">${r.impressions.toLocaleString()}</td>
     <td class="nr" style="color:var(--teal)">${r.ctr.toFixed(2)}%</td>
@@ -738,25 +739,35 @@ async function boot() {
     const json = await res.json();
     ALL = json.rows;
 
-    // Populate site dropdown — always show all 27 sites
-    const ALL_SITES = [
-      "https://lucky7evencasino.com","https://lucky7evencasino.org","https://lucky7evencasino.io/",
-      "https://fortuneplaycasino.net","https://fortuneplay.casino/","https://fortuneplay.io",
-      "https://www.spinjo.io","https://www.spinjocasino.com","https://www.casinospinjo.com",
-      "https://roosters.bet","https://roostersbet.com","https://casinoroosters.com",
-      "https://www.spinsup.io/","https://spinsupcasino.com/","https://casinospinsup.com/",
-      "https://rollero.io/","https://rollerocasino.com/","https://www.casinorollero.com/",
-      "https://rocketspin.io/","https://rocketspincasino.com/","https://www.casinorocketspin.com/",
-      "https://www.playmojo.io/","https://www.playmojocasino.com/","https://casinoplaymojo.com/",
-      "https://www.luckyvibe.io/","https://www.luckyvibecasino.com","https://www.casinoluckyvibe.com"
-    ];
+    // Populate site dropdown from data.json meta (single source of truth)
+    const ALL_SITES = (json.meta && json.meta.sites) ? json.meta.sites
+      : [...new Set(ALL.map(r => r.site))].sort();
     ALL_SITE_OPTS = [{ url:'all', label:'All Sites' },
       ...ALL_SITES.map(s => ({ url:s, label:strip(s) }))
     ];
     renderSiteCombo('');
 
-    // Populate country combobox from data
-    const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))].sort();
+    // Populate country combobox — restricted to the allowed country set
+    const ALLOWED_COUNTRIES = new Set([
+      'aus','ita','phl','are','nzl','deu','omn','che','irl','aut',
+      'can','kwt','fin','idn','gbr','ind','pol','pry','svn','usa',
+      'mex','fra','ken','ltu','cze','lux','mys','kor','bra','ukr',
+      'qat','hun','rus','sau','zaf','nga','nld','bgd','twn','gab',
+      'eth','moz','nor','arg','pak','tur','tha','bhr','dnk','chl',
+      'mlt','grc','prt','sgp','isl','esp','rou','svk','dza','jpn',
+      'lva','bel','hrv','kaz','est','arm','tza','syr','zmb','hkg',
+      'cyp','reu','xkk','vnm','egy','col','mar','per','bgr','tun',
+      'geo','swe','ecu','srb','ven','isr','zzz','blr','lka','mmr',
+      'npl','irq','dom','ury','jor','pse','zwe','chn','uzb','cri',
+      'mkd','irn','bih','bol','aze','lbn','mwi','vut','mda','pan',
+      'khm','alb','cmr','gha','lao','hnd','png','cod','bhs','yem',
+      'sen','rwa','dma','gtm','lby','civ','lso','cog','bwa','mdg',
+      'jam','tto','cub','jey','lca','mtq','tgo','bes','mrt','tjk',
+      'cuw','cym','som','ssd','gum','sdn','brn','nic','mng','mnp',
+      'ago','nam','kgz','slv'
+    ]);
+    const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))]
+      .filter(c => ALLOWED_COUNTRIES.has(c)).sort();
     ALL_COUNTRY_OPTS = [{ code:'all', label:'All Countries' },
       ...countryCodes.map(c => ({ code:c, label:countryLabel(c) }))
         .sort((a,b)=>a.label.localeCompare(b.label))

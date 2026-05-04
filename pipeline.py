@@ -3,7 +3,7 @@ import os
 import logging
 import pandas as pd
 from datetime import datetime, timezone
-from config import SITES, START_DATE, END_DATE, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
+from config import SITES, START_DATE, END_DATE, COUNTRIES, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
 from auth import get_service
 from gsc_client import fetch_site_data
 from filters import mark_keywords
@@ -20,7 +20,8 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     """Collapse per-date rows into a site/keyword/country summary.
 
     Position is weighted by impressions so high-traffic days influence the
-    average more than low-traffic days.
+    average more than low-traffic days.  Only keywords that appear in more
+    than one country are kept (cross-country filter).
     """
     if df.empty:
         return df
@@ -31,7 +32,9 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
             return group["position"].mean()
         return (group["position"] * group["impressions"]).sum() / total
 
-    keys = ["site", "keyword", "country", "branded"]
+    keys = ["site", "keyword", "country"]
+    if "branded" in df.columns:
+        keys.append("branded")
 
     sums = df.groupby(keys, as_index=False).agg(
         clicks=("clicks", "sum"),
@@ -42,10 +45,16 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     pos.columns = keys + ["avg_position"]
 
     result = sums.merge(pos, on=keys)
+    result = result[result["impressions"] > 0]  # guard against zero-impression rows before CTR
     result["ctr"] = (result["clicks"] / result["impressions"] * 100).round(2)
     result["avg_position"] = result["avg_position"].round(1)
 
     result = result[result["impressions"] >= MIN_IMPRESSIONS]
+
+    # Keep only keywords that appear in more than one country
+    kw_country_counts = result.groupby(["site", "keyword"])["country"].nunique()
+    multi_country = kw_country_counts[kw_country_counts > 1].reset_index()[["site", "keyword"]]
+    result = result.merge(multi_country, on=["site", "keyword"])
 
     return result.sort_values("clicks", ascending=False).reset_index(drop=True)
 
@@ -58,7 +67,7 @@ def run_pipeline() -> pd.DataFrame:
     for site in SITES:
         logger.info("Fetching  %s", site)
         try:
-            rows = fetch_site_data(service, site, START_DATE, END_DATE)
+            rows = fetch_site_data(service, site, START_DATE, END_DATE, COUNTRIES)
             if rows:
                 all_rows.extend(rows)
                 logger.info("  collected %d rows", len(rows))
@@ -73,14 +82,17 @@ def run_pipeline() -> pd.DataFrame:
 
     raw = pd.DataFrame(all_rows)
     marked = mark_keywords(raw)
+    branded_count = int(marked["branded"].sum())
+    non_branded_count = len(marked) - branded_count
     logger.info(
         "Marked: %d raw rows (%d branded, %d non-branded)",
         len(marked),
-        marked["branded"].sum(),
-        (~marked["branded"]).sum(),
+        branded_count,
+        non_branded_count,
     )
 
-    result = aggregate(marked)
+    non_branded = marked[~marked["branded"]].reset_index(drop=True)
+    result = aggregate(non_branded)
     logger.info("Aggregated to %d unique keyword rows", len(result))
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -94,6 +106,7 @@ def run_pipeline() -> pd.DataFrame:
     os.makedirs("public", exist_ok=True)
     payload = {
         "updated": datetime.now(timezone.utc).isoformat(),
+        "meta": {"sites": SITES},
         "rows": result.to_dict(orient="records"),
     }
     with open("public/data.json", "w", encoding="utf-8") as fh:
