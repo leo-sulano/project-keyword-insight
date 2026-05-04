@@ -374,9 +374,10 @@
 
   <div class="fg">
     <span class="fl">Site</span>
-    <select class="fsel" id="site-sel">
-      <option value="all">All Sites</option>
-    </select>
+    <div class="combo" id="site-combo">
+      <input type="text" id="site-input" class="fsel combo-input" placeholder="All Sites" autocomplete="off" readonly>
+      <ul class="combo-list" id="site-list"></ul>
+    </div>
   </div>
 
   <div class="rc" id="rc"><strong>—</strong> keywords</div>
@@ -480,7 +481,7 @@
 
 <script>
 /* ── State ─────────────────────────────────────────────────────────────────── */
-let ALL = [], F = [], ALL_COUNTRY_OPTS = [];
+let ALL = [], F = [], ALL_COUNTRY_OPTS = [], ALL_SITE_OPTS = [];
 let sCol = 'clicks', sAsc = false;
 let fC = 'all', fS = 'all', fB = 'non-branded';
 
@@ -731,11 +732,10 @@ async function boot() {
       "https://www.playmojo.io/","https://www.playmojocasino.com/","https://casinoplaymojo.com/",
       "https://www.luckyvibe.io/","https://www.luckyvibecasino.com","https://www.casinoluckyvibe.com"
     ];
-    const sel = document.getElementById('site-sel');
-    ALL_SITES.forEach(s => {
-      const o = document.createElement('option');
-      o.value=s; o.textContent=strip(s); sel.appendChild(o);
-    });
+    ALL_SITE_OPTS = [{ url:'all', label:'All Sites' },
+      ...ALL_SITES.map(s => ({ url:s, label:strip(s) }))
+    ];
+    renderSiteCombo('');
 
     // Populate country combobox from data
     const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))].sort();
@@ -815,8 +815,53 @@ document.getElementById('btog').addEventListener('click', e => {
   b.classList.add('on'); fB = b.dataset.v; apply();
 });
 
-document.getElementById('site-sel').addEventListener('change', e => {
-  fS = e.target.value; apply();
+/* ── Site combobox ───────────────────────────────────────────────────────────── */
+const sinput = document.getElementById('site-input');
+const slist  = document.getElementById('site-list');
+
+function renderSiteCombo(q) {
+  const lq = q.toLowerCase();
+  const matches = ALL_SITE_OPTS.filter(o =>
+    !lq || o.label.toLowerCase().includes(lq)
+  );
+  slist.innerHTML = matches.map(o =>
+    `<li data-url="${o.url}" class="${o.url===fS?'selected':''}">${o.label}</li>`
+  ).join('');
+}
+
+function openSiteCombo() {
+  sinput.readOnly = false;
+  sinput.classList.add('open');
+  slist.classList.add('open');
+  sinput.select();
+}
+
+function closeSiteCombo(label) {
+  sinput.readOnly = true;
+  sinput.classList.remove('open');
+  slist.classList.remove('open');
+  if (label !== undefined) sinput.value = label;
+  renderSiteCombo('');
+}
+
+sinput.addEventListener('click', () => { openSiteCombo(); renderSiteCombo(''); });
+sinput.addEventListener('input', e => { renderSiteCombo(e.target.value); slist.classList.add('open'); });
+
+slist.addEventListener('mousedown', e => {
+  const li = e.target.closest('li'); if (!li) return;
+  e.preventDefault();
+  fS = li.dataset.url;
+  const opt = ALL_SITE_OPTS.find(o => o.url === fS);
+  closeSiteCombo(fS === 'all' ? '' : opt.label);
+  sinput.placeholder = fS === 'all' ? 'All Sites' : '';
+  apply();
+});
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('site-combo').contains(e.target)) {
+    const opt = ALL_SITE_OPTS.find(o => o.url === fS);
+    closeSiteCombo(fS === 'all' ? '' : (opt ? opt.label : ''));
+  }
 });
 
 document.querySelector('thead').addEventListener('click', e => {
