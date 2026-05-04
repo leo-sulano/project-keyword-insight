@@ -132,7 +132,14 @@
       background: var(--s2); border: 1px solid var(--gold);
       border-radius: 4px; max-height: 220px; overflow-y: auto;
       z-index: 100; margin: 0; padding: 0; list-style: none;
+      scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
     }
+    .combo-list::-webkit-scrollbar { width: 4px; }
+    .combo-list::-webkit-scrollbar-track { background: transparent; }
+    .combo-list::-webkit-scrollbar-thumb {
+      background: var(--border2); border-radius: 2px;
+    }
+    .combo-list::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     .combo-list.open { display: block; }
     .combo-list li {
       padding: 6px 10px; font-family: var(--font-m); font-size: .68rem;
@@ -227,7 +234,11 @@
       justify-content: space-between;
     }
 
-    .twrap { overflow-x: auto; }
+    .twrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+    .twrap::-webkit-scrollbar { height: 4px; }
+    .twrap::-webkit-scrollbar-track { background: transparent; }
+    .twrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .twrap::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
     table { width: 100%; border-collapse: collapse; font-size: .71rem; }
 
