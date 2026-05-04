@@ -1,7 +1,7 @@
 SITES = [
     "https://lucky7evencasino.com",
     "https://lucky7evencasino.org",
-    "http://lucky7evencasino.io",
+    "https://lucky7evencasino.io/",
     "https://fortuneplaycasino.net",
     "https://fortuneplay.casino/",
     "https://fortuneplay.io",
