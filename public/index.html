@@ -115,16 +115,31 @@
     .tb.on { background: var(--gold); color: var(--bg); }
     .tb:not(.on):hover { background: var(--s2); color: var(--text); }
 
-    .country-wrap { display: flex; flex-direction: column; gap: 4px; }
-    input.fsel {
+    .combo { position: relative; width: 200px; }
+    .combo-input {
       font-family: var(--font-m); font-size: .68rem;
       background: var(--s2); color: var(--text);
-      border: 1px solid var(--border2);
-      border-radius: 4px; padding: 5px 10px;
-      outline: none; width: 180px;
+      border: 1px solid var(--border2); border-radius: 4px;
+      padding: 5px 28px 5px 10px; outline: none; width: 100%;
+      box-sizing: border-box; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2356607A'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 9px center;
     }
-    input.fsel::placeholder { color: var(--muted); }
-    input.fsel:focus { border-color: var(--gold); }
+    .combo-input.open, .combo-input:focus { border-color: var(--gold); cursor: text; }
+    .combo-input::placeholder { color: var(--muted); }
+    .combo-list {
+      display: none; position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+      background: var(--s2); border: 1px solid var(--gold);
+      border-radius: 4px; max-height: 220px; overflow-y: auto;
+      z-index: 100; margin: 0; padding: 0; list-style: none;
+    }
+    .combo-list.open { display: block; }
+    .combo-list li {
+      padding: 6px 10px; font-family: var(--font-m); font-size: .68rem;
+      color: var(--text); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .combo-list li:hover, .combo-list li.active { background: var(--s3); color: var(--gold); }
+    .combo-list li.selected { color: var(--gold); }
 
     select.fsel {
       font-family: var(--font-m); font-size: .68rem;
@@ -342,11 +357,9 @@
 <div class="filters">
   <div class="fg">
     <span class="fl">Country</span>
-    <div class="country-wrap">
-      <input type="text" id="country-search" class="fsel" placeholder="Search country…" autocomplete="off">
-      <select id="country-sel" class="fsel" size="1">
-        <option value="all">All Countries</option>
-      </select>
+    <div class="combo" id="country-combo">
+      <input type="text" id="country-input" class="fsel combo-input" placeholder="All Countries" autocomplete="off" readonly>
+      <ul class="combo-list" id="country-list"></ul>
     </div>
   </div>
 
@@ -467,7 +480,7 @@
 
 <script>
 /* ── State ─────────────────────────────────────────────────────────────────── */
-let ALL = [], F = [];
+let ALL = [], F = [], ALL_COUNTRY_OPTS = [];
 let sCol = 'clicks', sAsc = false;
 let fC = 'all', fS = 'all', fB = 'non-branded';
 
@@ -724,13 +737,13 @@ async function boot() {
       o.value=s; o.textContent=strip(s); sel.appendChild(o);
     });
 
-    // Populate country dropdown from data
+    // Populate country combobox from data
     const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))].sort();
-    const csel = document.getElementById('country-sel');
-    countryCodes.forEach(c => {
-      const o = document.createElement('option');
-      o.value = c; o.textContent = countryLabel(c); csel.appendChild(o);
-    });
+    ALL_COUNTRY_OPTS = [{ code:'all', label:'All Countries' },
+      ...countryCodes.map(c => ({ code:c, label:countryLabel(c) }))
+        .sort((a,b)=>a.label.localeCompare(b.label))
+    ];
+    renderCombo('');
 
     // Timestamp
     if (json.updated) {
@@ -747,19 +760,53 @@ async function boot() {
 }
 
 /* ── Events ──────────────────────────────────────────────────────────────────── */
-document.getElementById('country-sel').addEventListener('change', e => {
-  fC = e.target.value; apply();
+/* ── Country combobox ────────────────────────────────────────────────────────── */
+const cinput = document.getElementById('country-input');
+const clist  = document.getElementById('country-list');
+
+function renderCombo(q) {
+  const lq = q.toLowerCase();
+  const matches = ALL_COUNTRY_OPTS.filter(o =>
+    !lq || o.label.toLowerCase().includes(lq) || o.code.includes(lq)
+  );
+  clist.innerHTML = matches.map(o =>
+    `<li data-code="${o.code}" class="${o.code===fC?'selected':''}">${o.label}</li>`
+  ).join('');
+}
+
+function openCombo() {
+  cinput.readOnly = false;
+  cinput.classList.add('open');
+  clist.classList.add('open');
+  cinput.select();
+}
+
+function closeCombo(label) {
+  cinput.readOnly = true;
+  cinput.classList.remove('open');
+  clist.classList.remove('open');
+  if (label !== undefined) cinput.value = label;
+  renderCombo('');
+}
+
+cinput.addEventListener('click', () => { openCombo(); renderCombo(cinput.value === (ALL_COUNTRY_OPTS.find(o=>o.code===fC)||{}).label ? '' : cinput.value); });
+cinput.addEventListener('input', e => { renderCombo(e.target.value); clist.classList.add('open'); });
+
+clist.addEventListener('mousedown', e => {
+  const li = e.target.closest('li'); if (!li) return;
+  e.preventDefault();
+  fC = li.dataset.code;
+  const opt = ALL_COUNTRY_OPTS.find(o => o.code === fC);
+  closeCombo(fC === 'all' ? '' : opt.label);
+  cinput.placeholder = fC === 'all' ? 'All Countries' : '';
+  apply();
 });
 
-document.getElementById('country-search').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  const csel = document.getElementById('country-sel');
-  [...csel.options].forEach(o => {
-    o.hidden = q && o.value !== 'all' && !o.textContent.toLowerCase().includes(q) && !o.value.includes(q);
-  });
-  // auto-select if only one match
-  const visible = [...csel.options].filter(o => !o.hidden);
-  if (visible.length === 1) { csel.value = visible[0].value; fC = csel.value; apply(); }
+document.addEventListener('click', e => {
+  if (!document.getElementById('country-combo').contains(e.target)) {
+    const opt = ALL_COUNTRY_OPTS.find(o => o.code === fC);
+    closeCombo(fC === 'all' ? '' : (opt ? opt.label : ''));
+  }
 });
 
 document.getElementById('btog').addEventListener('click', e => {
