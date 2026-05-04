@@ -347,9 +347,6 @@
   </div>
   <div class="header-right">
     <span><span class="live-dot"></span><span id="ts">—</span></span>
-    <span style="color:var(--sand)">SAU</span>
-    <span style="color:var(--muted)">·</span>
-    <span style="color:var(--teal)">KWT</span>
   </div>
 </header>
 
@@ -755,12 +752,9 @@ async function boot() {
     ];
     renderCombo('');
 
-    // Timestamp
-    if (json.updated) {
-      const d = new Date(json.updated);
-      document.getElementById('ts').textContent =
-        'Updated ' + d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    }
+    // Timestamp — always shows today's date
+    document.getElementById('ts').textContent =
+      new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 
     apply();
   } catch(e) {
