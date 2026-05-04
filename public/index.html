@@ -740,10 +740,37 @@ async function boot() {
     ALL = json.rows;
 
     // Populate site dropdown from data.json meta (single source of truth)
-    const ALL_SITES = (json.meta && json.meta.sites) ? json.meta.sites
-      : [...new Set(ALL.map(r => r.site))].sort();
+    const STATIC_SITES = [
+      'https://lucky7evencasino.com',
+      'https://lucky7evencasino.org',
+      'https://lucky7evencasino.io/',
+      'https://fortuneplaycasino.net',
+      'https://fortuneplay.casino',
+      'https://fortuneplay.io',
+      'https://www.spinjo.io',
+      'https://www.spinjocasino.com',
+      'https://www.casinospinjo.com',
+      'https://roosters.bet',
+      'https://roostersbet.com',
+      'https://casinoroosters.com',
+      'https://www.spinsup.io/',
+      'https://spinsupcasino.com/',
+      'https://casinospinsup.com/',
+      'https://rollero.io/',
+      'https://rollerocasino.com/',
+      'https://www.casinorollero.com/',
+      'https://rocketspin.io/',
+      'https://rocketspincasino.com/',
+      'https://www.casinorocketspin.com/',
+      'https://www.playmojo.io/',
+      'https://www.playmojocasino.com/',
+      'https://casinoplaymojo.com/',
+      'https://www.luckyvibe.io/',
+      'https://www.luckyvibecasino.com',
+      'https://www.casinoluckyvibe.com',
+    ];
     ALL_SITE_OPTS = [{ url:'all', label:'All Sites' },
-      ...ALL_SITES.map(s => ({ url:s, label:strip(s) }))
+      ...STATIC_SITES.map(s => ({ url:s, label:strip(s) }))
     ];
     renderSiteCombo('');
 
