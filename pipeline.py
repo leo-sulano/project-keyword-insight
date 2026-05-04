@@ -3,7 +3,7 @@ import os
 import logging
 import pandas as pd
 from datetime import datetime, timezone
-from config import SITES, START_DATE, END_DATE, COUNTRIES, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
+from config import SITES, START_DATE, END_DATE, MIN_IMPRESSIONS, OUTPUT_DIR, LATEST_CSV
 from auth import get_service
 from gsc_client import fetch_site_data
 from filters import mark_keywords
@@ -58,7 +58,7 @@ def run_pipeline() -> pd.DataFrame:
     for site in SITES:
         logger.info("Fetching  %s", site)
         try:
-            rows = fetch_site_data(service, site, START_DATE, END_DATE, COUNTRIES)
+            rows = fetch_site_data(service, site, START_DATE, END_DATE)
             if rows:
                 all_rows.extend(rows)
                 logger.info("  collected %d rows", len(rows))

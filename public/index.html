@@ -115,6 +115,17 @@
     .tb.on { background: var(--gold); color: var(--bg); }
     .tb:not(.on):hover { background: var(--s2); color: var(--text); }
 
+    .country-wrap { display: flex; flex-direction: column; gap: 4px; }
+    input.fsel {
+      font-family: var(--font-m); font-size: .68rem;
+      background: var(--s2); color: var(--text);
+      border: 1px solid var(--border2);
+      border-radius: 4px; padding: 5px 10px;
+      outline: none; width: 180px;
+    }
+    input.fsel::placeholder { color: var(--muted); }
+    input.fsel:focus { border-color: var(--gold); }
+
     select.fsel {
       font-family: var(--font-m); font-size: .68rem;
       background: var(--s2); color: var(--text);
@@ -331,10 +342,11 @@
 <div class="filters">
   <div class="fg">
     <span class="fl">Country</span>
-    <div class="tg" id="ctog">
-      <button class="tb on" data-v="all">All</button>
-      <button class="tb"    data-v="SAU">SAU</button>
-      <button class="tb"    data-v="KWT">KWT</button>
+    <div class="country-wrap">
+      <input type="text" id="country-search" class="fsel" placeholder="Search country…" autocomplete="off">
+      <select id="country-sel" class="fsel" size="1">
+        <option value="all">All Countries</option>
+      </select>
     </div>
   </div>
 
@@ -459,6 +471,29 @@ let ALL = [], F = [];
 let sCol = 'clicks', sAsc = false;
 let fC = 'all', fS = 'all', fB = 'non-branded';
 
+/* ISO 3166-1 alpha-3 → display name */
+const COUNTRY_NAMES = {
+  sau:'Saudi Arabia', kwt:'Kuwait', are:'UAE', bhr:'Bahrain', qat:'Qatar',
+  omn:'Oman', jor:'Jordan', egy:'Egypt', irq:'Iraq', lbn:'Lebanon',
+  tun:'Tunisia', mar:'Morocco', dza:'Algeria', lby:'Libya', yem:'Yemen',
+  syr:'Syria', pse:'Palestine', gbr:'United Kingdom', usa:'United States',
+  deu:'Germany', fra:'France', esp:'Spain', ita:'Italy', nld:'Netherlands',
+  pol:'Poland', swe:'Sweden', nor:'Norway', dnk:'Denmark', fin:'Finland',
+  cze:'Czech Republic', aut:'Austria', che:'Switzerland', bel:'Belgium',
+  prt:'Portugal', grc:'Greece', rou:'Romania', hun:'Hungary', svk:'Slovakia',
+  bgr:'Bulgaria', hrv:'Croatia', srb:'Serbia', ukr:'Ukraine', rus:'Russia',
+  can:'Canada', aus:'Australia', nzl:'New Zealand', zaf:'South Africa',
+  ind:'India', pak:'Pakistan', bgd:'Bangladesh', lka:'Sri Lanka',
+  nga:'Nigeria', ken:'Kenya', gha:'Ghana', eth:'Ethiopia',
+  bra:'Brazil', arg:'Argentina', mex:'Mexico', col:'Colombia',
+  jpn:'Japan', kor:'South Korea', chn:'China', twn:'Taiwan', hkg:'Hong Kong',
+  sgp:'Singapore', mys:'Malaysia', idn:'Indonesia', tha:'Thailand', phl:'Philippines',
+  vnm:'Vietnam', mmr:'Myanmar', kaz:'Kazakhstan', uzb:'Uzbekistan',
+};
+function countryLabel(code) {
+  return COUNTRY_NAMES[code.toLowerCase()] || code.toUpperCase();
+}
+
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M'
                : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
@@ -479,7 +514,7 @@ const strip = s => s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');
 /* ── Filter ──────────────────────────────────────────────────────────────────── */
 function apply() {
   F = ALL.filter(r => {
-    if (fC !== 'all' && (r.country||'').toUpperCase() !== fC) return false;
+    if (fC !== 'all' && (r.country||'').toLowerCase() !== fC) return false;
     if (fS !== 'all' && r.site !== fS) return false;
     if (fB === 'branded' && !r.branded) return false;
     if (fB === 'non-branded' && r.branded) return false;
@@ -653,6 +688,14 @@ async function boot() {
       o.value=s; o.textContent=strip(s); sel.appendChild(o);
     });
 
+    // Populate country dropdown from data
+    const countryCodes = [...new Set(ALL.map(r=>(r.country||'').toLowerCase()))].sort();
+    const csel = document.getElementById('country-sel');
+    countryCodes.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = countryLabel(c); csel.appendChild(o);
+    });
+
     // Timestamp
     if (json.updated) {
       const d = new Date(json.updated);
@@ -668,10 +711,19 @@ async function boot() {
 }
 
 /* ── Events ──────────────────────────────────────────────────────────────────── */
-document.getElementById('ctog').addEventListener('click', e => {
-  const b = e.target.closest('[data-v]'); if(!b) return;
-  document.querySelectorAll('#ctog .tb').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); fC = b.dataset.v; apply();
+document.getElementById('country-sel').addEventListener('change', e => {
+  fC = e.target.value; apply();
+});
+
+document.getElementById('country-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  const csel = document.getElementById('country-sel');
+  [...csel.options].forEach(o => {
+    o.hidden = q && o.value !== 'all' && !o.textContent.toLowerCase().includes(q) && !o.value.includes(q);
+  });
+  // auto-select if only one match
+  const visible = [...csel.options].filter(o => !o.hidden);
+  if (visible.length === 1) { csel.value = visible[0].value; fC = csel.value; apply(); }
 });
 
 document.getElementById('btog').addEventListener('click', e => {
